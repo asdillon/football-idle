@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NFL Career — Idle Game</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Character Creation Overlay ──────────────────────────────────────────── -->
+<div id="creation-screen" class="hidden">
+  <div class="creation-modal">
+    <h1>Begin Your NFL Career</h1>
+    <p>Enter your player's name and choose a position to start.</p>
+
+    <label for="creation-name">Player Name</label>
+    <input type="text" id="creation-name" maxlength="24" placeholder="e.g. Marcus Webb" />
+
+    <label>Position</label>
+    <div id="creation-positions" class="position-grid"></div>
+
+    <button id="creation-confirm" class="btn btn--primary btn--large">Start Career</button>
+  </div>
+</div>
+
+<!-- ── Offline Summary Modal ───────────────────────────────────────────────── -->
+<div id="offline-modal" class="hidden">
+  <div class="modal-backdrop">
+    <div class="modal">
+      <h2>Welcome Back!</h2>
+      <div id="offline-summary"></div>
+      <button class="btn btn--primary" onclick="document.getElementById('offline-modal').classList.add('hidden')">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main Layout ─────────────────────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header__brand">NFL Career</div>
+    <div class="header__resources">
+      <span class="resource-chip resource-chip--money">💵 <span id="hdr-money">$0</span></span>
+      <span class="resource-chip resource-chip--tp">⚡ <span id="hdr-tp">0 TP</span></span>
+      <span class="resource-chip resource-chip--fame">⭐ <span id="hdr-fame">0 Fame</span></span>
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <button class="nav-btn nav-btn--active" data-panel="dashboard">Dashboard</button>
+    <button class="nav-btn" data-panel="training">Training</button>
+    <button class="nav-btn" data-panel="matchlog">Game Log</button>
+    <button class="nav-btn" data-panel="upgrades">Upgrades</button>
+    <button class="nav-btn" data-panel="career">Career</button>
+    <button class="nav-btn" data-panel="prestige">Legacy</button>
+    <button class="nav-btn" data-panel="help">Help</button>
+  </nav>
+
+  <!-- Global persistent status banner -->
+  <div id="dash-game-banner" class="game-banner">
+    <div class="game-banner__dot"></div>
+    <div class="game-banner__text">
+      <span class="game-banner__label" id="dash-banner-label">Next Game</span>
+      <span class="game-banner__detail" id="dash-game-opp">—</span>
+    </div>
+  </div>
+
+  <!-- Panels -->
+  <main class="panels">
+
+    <!-- Dashboard -->
+    <section id="panel-dashboard" class="panel panel--active">
+      <div class="player-card">
+        <div class="player-card__ovr" id="dash-ovr">50</div>
+        <div class="player-card__info">
+          <div class="player-card__name" id="dash-name">—</div>
+          <div class="player-card__pos" id="dash-position">—</div>
+          <div class="player-card__age" id="dash-age">—</div>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <div class="info-card">
+          <div class="info-card__label">Season</div>
+          <div class="info-card__val" id="dash-season">—</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card__label">Week</div>
+          <div class="info-card__val" id="dash-week">—</div>
+        </div>
+        <div class="info-card">
+          <div class="info-card__label">Record</div>
+          <div class="info-card__val" id="dash-record">0-0</div>
+        </div>
+        <div class="info-card info-card--timer">
+          <div class="info-card__label" id="dash-timer-label">Next Game</div>
+          <div class="info-card__val" id="dash-timer">—</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Training -->
+    <section id="panel-training" class="panel">
+      <h2>Training</h2>
+      <div class="training-header">
+        <span>Training Points: <strong id="train-tp">0</strong></span>
+        <span>Rate: <strong id="train-rate">0 TP/s</strong></span>
+      </div>
+
+      <h3>Active Drills</h3>
+      <div id="drill-slots" class="drill-slots"></div>
+
+      <h3>Available Drills</h3>
+      <div id="available-drills" class="drill-list"></div>
+
+      <h3>Attributes</h3>
+      <div id="attr-list" class="attr-list"></div>
+    </section>
+
+    <!-- Game Log -->
+    <section id="panel-matchlog" class="panel">
+      <h2>Game Log</h2>
+      <div id="season-stats" class="season-stats-row"></div>
+      <div class="match-list-header">
+        <span>Result</span>
+        <span>Score</span>
+        <span>Opponent</span>
+        <span>Stats</span>
+        <span>Perf</span>
+      </div>
+      <div id="match-list" class="match-list"></div>
+    </section>
+
+    <!-- Upgrades -->
+    <section id="panel-upgrades" class="panel">
+      <h2>Upgrades</h2>
+      <h3>Equipment</h3>
+      <div id="upgrades-equipment" class="upgrade-grid"></div>
+      <h3>Coaches</h3>
+      <div id="upgrades-coach" class="upgrade-grid"></div>
+      <h3>Diet &amp; Recovery</h3>
+      <div id="upgrades-diet" class="upgrade-grid"></div>
+      <h3>Endorsements</h3>
+      <div id="upgrades-endorsement" class="upgrade-grid"></div>
+
+      <h3 id="upgrades-position-label">Position Specialist</h3>
+      <div id="upgrades-position" class="upgrade-grid"></div>
+    </section>
+
+    <!-- Career -->
+    <section id="panel-career" class="panel">
+      <h2>Career</h2>
+      <h3>Current Contract</h3>
+      <div id="career-contract" class="info-block"></div>
+      <h3>Awards</h3>
+      <div id="career-awards" class="award-list"></div>
+      <div id="career-offseason"></div>
+    </section>
+
+    <!-- Prestige / Legacy -->
+    <section id="panel-prestige" class="panel">
+      <h2>Legacy</h2>
+      <h3>Permanent Bonuses</h3>
+      <div id="prestige-legacy" class="info-block"></div>
+      <h3>Retire &amp; Prestige</h3>
+      <div id="prestige-action"></div>
+    </section>
+
+    <!-- Help -->
+    <section id="panel-help" class="panel">
+      <h2>How to Play</h2>
+
+      <div class="help-toc">
+        <a href="#help-resources">Resources</a>
+        <a href="#help-training">Training</a>
+        <a href="#help-matches">Matches &amp; Seasons</a>
+        <a href="#help-upgrades">Upgrades</a>
+        <a href="#help-career">Career &amp; Contracts</a>
+        <a href="#help-legacy">Legacy &amp; Prestige</a>
+      </div>
+
+      <!-- Resources -->
+      <div class="help-section" id="help-resources">
+        <h3>Resources</h3>
+        <div class="help-cards">
+
+          <div class="help-card">
+            <div class="help-card__icon help-card__icon--tp">⚡</div>
+            <div>
+              <div class="help-card__title">Training Points (TP)</div>
+              <p>TP is your primary training currency. It accumulates passively from your active drills every second, even while you're on another tab. Spend TP to increase individual attributes like Speed, Strength, or Throw Accuracy. The cost to upgrade each attribute rises exponentially — early levels are cheap, later levels cost thousands of TP.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon help-card__icon--money">💵</div>
+            <div>
+              <div class="help-card__title">Money</div>
+              <p>Money is earned from your game-day salary (paid after each match) plus any endorsement deals you've signed. It's spent in the Upgrades tab on equipment, coaches, diet plans, and unlocking new drills. Your contract salary increases each time you re-sign — a higher OVR and more contract tokens mean a bigger deal.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon help-card__icon--fame">⭐</div>
+            <div>
+              <div class="help-card__title">Fame</div>
+              <p>Fame represents your public profile and reputation. It's earned after every match — better performances earn more Fame, and wins give a bonus. Fame is required to unlock higher-tier upgrades (coaches, national endorsements, premium equipment) that aren't available to unknown rookies. The more seasons you play and the better you perform, the more Fame you accumulate.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">🎫</div>
+            <div>
+              <div class="help-card__title">Contract Tokens</div>
+              <p>You earn one Contract Token at the end of each season. When your contract expires and you need to re-sign, unspent tokens are applied to negotiate a better deal — more tokens means higher salary and more guaranteed years. Tokens reset to zero after each contract signing.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">🏆</div>
+            <div>
+              <div class="help-card__title">XP</div>
+              <p>Experience Points are earned from matches and accumulate on your player card as a lifetime total. XP is currently a progression tracker — your total XP reflects your overall career accomplishment and feeds into award eligibility.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Training -->
+      <div class="help-section" id="help-training">
+        <h3>Training</h3>
+        <p class="help-intro">Training is the backbone of progression. Your player gets better by accumulating TP from drills and spending it on attributes.</p>
+        <div class="help-cards">
+
+          <div class="help-card">
+            <div class="help-card__icon">🏋️</div>
+            <div>
+              <div class="help-card__title">Drill Slots</div>
+              <p>You have 3 drill slots active at once (expandable to 5 via the Coach upgrade). Each slot runs a single drill continuously, earning TP every second. You can swap drills at any time — remove an active drill to free up the slot, then assign a different one.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">🔓</div>
+            <div>
+              <div class="help-card__title">Unlocking Drills</div>
+              <p>Some drills are locked at the start. Once enough seasons have passed (shown on the drill card), you can unlock them for a one-time Money cost. Unlocked drills stay available permanently and can be freely swapped into any slot.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">⭐</div>
+            <div>
+              <div class="help-card__title">Position-Key Attributes</div>
+              <p>On the Attributes list, stats marked with ★ are the ones that most affect your OVR rating for your position. Focus TP on these for the biggest OVR gains. For example, a QB should prioritize Throw Accuracy and Throw Power; a CB should prioritize Coverage and Speed.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">💤</div>
+            <div>
+              <div class="help-card__title">Offline Training</div>
+              <p>Drills run at 50% efficiency while you're away. When you come back, the game calculates how long you were gone (capped at 8 hours) and awards the accumulated TP automatically. You'll see a summary when you return.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Matches -->
+      <div class="help-section" id="help-matches">
+        <h3>Matches &amp; Seasons</h3>
+        <p class="help-intro">Matches simulate automatically every 60 seconds. You don't control individual plays — your attributes and upgrades determine your performance.</p>
+        <div class="help-cards">
+
+          <div class="help-card">
+            <div class="help-card__icon">🏈</div>
+            <div>
+              <div class="help-card__title">Performance Score</div>
+              <p>Each match generates a Performance Score (0–100) based on your OVR rating plus some randomness. A higher OVR gives a higher baseline score, but variance means any single game can go badly — that's the nature of football. Your stat line (passing yards, tackles, etc.) is then derived from that score.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">📅</div>
+            <div>
+              <div class="help-card__title">Regular Season</div>
+              <p>The regular season is 17 weeks. One match fires automatically each week. Your team needs at least 9 wins to make the playoffs. At the end of the season, awards are evaluated (Pro Bowl, MVP, Rookie of the Year) based on your average performance and team record.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">🏟️</div>
+            <div>
+              <div class="help-card__title">Playoffs &amp; Super Bowl</div>
+              <p>If your team finishes 9–8 or better, you enter the playoffs. There are 3 playoff rounds — win all three to reach the Super Bowl. Playoff wins are also simulated automatically. A dominant Super Bowl performance can earn you Super Bowl MVP on top of the championship.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">🏖️</div>
+            <div>
+              <div class="help-card__title">Off-Season</div>
+              <p>After the season ends (or playoffs conclude), you enter the Off-Season. Training continues normally. Head to the Career tab to start the next season when you're ready — use this time to spend TP on attributes and upgrade your equipment before the next campaign.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Upgrades -->
+      <div class="help-section" id="help-upgrades">
+        <h3>Upgrades</h3>
+        <p class="help-intro">Upgrades are permanent improvements purchased with Money or Contract Tokens. Each upgrade has up to 3–5 levels.</p>
+        <div class="help-cards">
+
+          <div class="help-card">
+            <div class="help-card__icon">👟</div>
+            <div>
+              <div class="help-card__title">Equipment</div>
+              <p>Equipment items (cleats, gloves, helmet) give flat bonuses to your match performance score or directly boost an attribute. These are the most straightforward upgrades — buy them as soon as you can afford them.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">📋</div>
+            <div>
+              <div class="help-card__title">Coaches</div>
+              <p>Coaches multiply the TP rate of specific drill types. A QB Coach, for example, boosts Throwing Mechanics drills by 25% per level. The Extra Drill Slot upgrade (also in this category) is one of the highest-impact purchases — going from 3 to 4 or 5 simultaneous drills dramatically increases your TP income.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">🥗</div>
+            <div>
+              <div class="help-card__title">Diet &amp; Recovery</div>
+              <p>Diet upgrades (like the Nutrition Plan) apply a global multiplier to all drill TP rates. Unlike coaches which target specific drill types, diet bonuses stack on top of everything and benefit all active drills simultaneously.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">📣</div>
+            <div>
+              <div class="help-card__title">Endorsements</div>
+              <p>Endorsement deals generate passive Money income every second, even offline (at full rate unlike training). A Local Sponsor earns a small trickle; a National Deal earns significantly more but requires high Fame and several seasons of play. Endorsements are the best way to fund expensive late-game upgrades.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Career -->
+      <div class="help-section" id="help-career">
+        <h3>Career &amp; Contracts</h3>
+        <div class="help-cards">
+
+          <div class="help-card">
+            <div class="help-card__icon">📄</div>
+            <div>
+              <div class="help-card__title">Your Contract</div>
+              <p>You start on a 4-year rookie deal. Each year of the contract counts down as seasons pass. When it expires, you enter free agency and negotiate a new deal. Your new salary is determined by your OVR and how many Contract Tokens you've saved — higher OVR and more tokens mean a bigger payday.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">🎖️</div>
+            <div>
+              <div class="help-card__title">Awards</div>
+              <p>Awards are earned automatically based on your season performance. Pro Bowl requires an average performance above 70. MVP requires dominant play (avg &gt; 85) and a strong team record (70%+ win rate). Rookie of the Year is only available in Season 1. Super Bowl awards are earned via the playoffs.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Legacy -->
+      <div class="help-section" id="help-legacy">
+        <h3>Legacy &amp; Prestige</h3>
+        <div class="help-cards">
+
+          <div class="help-card">
+            <div class="help-card__icon">🔄</div>
+            <div>
+              <div class="help-card__title">Retiring &amp; Prestiging</div>
+              <p>After completing at least 3 seasons, you can retire your player from the Legacy tab. This ends your current career but unlocks permanent bonuses for your next player. Your retired player's stats and awards are archived in the Legacy Hall.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">📈</div>
+            <div>
+              <div class="help-card__title">Permanent Bonuses</div>
+              <p>Each prestige grants compounding permanent bonuses that carry into every future career:</p>
+              <ul class="help-list">
+                <li><strong>+20% Training Point gain</strong> — all drills earn more TP per second</li>
+                <li><strong>+15% Money income</strong> — match salary and endorsements pay more</li>
+                <li><strong>+2 Starting OVR</strong> — your next rookie starts slightly stronger (capped at +10)</li>
+              </ul>
+              <p>These stack with each prestige, making later careers significantly faster.</p>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <div class="help-card__icon">🏛️</div>
+            <div>
+              <div class="help-card__title">Tips for Prestige</div>
+              <p>Don't rush to retire early — a player with a higher OVR and more awards contributes more to your legacy. Try to win a Super Bowl before retiring for the first time. The legacy bonuses make training so much faster on the second career that even a shorter run is worth it.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<!-- Toast container -->
+<div id="toast-container" class="toast-container"></div>
+
+<script type="module" src="dist/main.js"></script>
+</body>
+</html>
